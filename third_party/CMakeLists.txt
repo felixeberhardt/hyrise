@@ -81,6 +81,15 @@ add_subdirectory(tpch-dbgen)
 add_subdirectory(nlohmann_json)
 add_subdirectory(robin-map)
 
+# Add PGASUS
+if(${NUMA_FOUND})
+    set(PGASUS_WITH_TASKING OFF CACHE BOOL "" FORCE)
+    set(PGASUS_REPLACE_MALLOC OFF CACHE BOOL "" FORCE)
+    set(PGASUS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(PGASUS_BUILD_DOCUMENTATION OFF CACHE BOOL "" FORCE)
+    add_subdirectory(pgasus)
+endif()
+
 ## Build lz4
 set(LZ4_LIBRARY_DIR lz4/lib)
 
