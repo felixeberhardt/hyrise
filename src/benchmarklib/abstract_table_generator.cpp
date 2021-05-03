@@ -284,6 +284,23 @@ void AbstractTableGenerator::generate_and_store() {
   }
 
   /**
+   * Move Tables to the Table Memory Pool
+   */
+  {
+    const char * val = std::getenv( "TABLE_POOL_NODE" );
+    int node_id = atoi(val);
+    std::cout << "Moving Chunks to Memory Pool on Node " << node_id << std::flush;
+    auto& storage_manager = Hyrise::get().storage_manager;
+    for (auto &[table_name, table] : storage_manager.tables()) {
+      std::cout << std::string{"-  Moving '"} + table_name << std::endl;
+      for (auto chunk_id = ChunkID{0}; chunk_id < table->chunk_count(); ++chunk_id) {
+          const auto chunk = table->get_chunk(chunk_id);
+          chunk->migrate(Hyrise::get().topology.get_memory_resource(node_id));
+      }
+    }
+  }
+
+  /**
    * Create indexes if requested by the user
    */
   if (_benchmark_config->indexes) {
