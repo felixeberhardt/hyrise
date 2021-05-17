@@ -40,7 +40,7 @@
 	shallow = true
 [submodule "third_party/pgasus"]
 	path = third_party/pgasus
-	url = https://github.com/hyrise/pgasus.git
+	url = https://github.com/felixeberhardt/pgasus.git
 [submodule "third_party/sql-parser"]
 	path = third_party/sql-parser
 	url = https://github.com/hyrise/sql-parser
