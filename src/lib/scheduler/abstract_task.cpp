@@ -10,6 +10,7 @@
 #include "task_queue.hpp"
 #include "utils/tracing/probes.hpp"
 #include "worker.hpp"
+#include "memory/numa_memory_resource.hpp"
 
 #include "utils/assert.hpp"
 
@@ -93,6 +94,7 @@ void AbstractTask::execute() {
   // spawned the task are pushed down to a point where this thread is already running.
   Assert(_is_scheduled, "Task should have been scheduled before being executed");
 
+  numa::PlaceGuard placeGuard{ Hyrise::get().topology.get_intermediate_pool()->get_mem_source() };
   _on_execute();
 
   for (auto& successor : _successors) {

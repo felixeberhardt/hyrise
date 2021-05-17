@@ -174,6 +174,10 @@ boost::container::pmr::memory_resource* Topology::get_memory_resource(int node_i
   return &_memory_resources[static_cast<size_t>(node_id)];
 }
 
+NUMAMemoryResource* Topology::get_intermediate_pool() {
+  return _intermediate_pool;
+}
+
 void Topology::_clear() {
   _nodes.clear();
   _memory_resources.clear();
@@ -190,6 +194,8 @@ void Topology::_create_memory_resources() {
     auto system_node_id = _fake_numa_topology ? node_id % _number_of_hardware_nodes : node_id;
     _memory_resources.emplace_back(NUMAMemoryResource(system_node_id, memsource_name.str()));
   }
+  char *val = std::getenv( "TMP_POOL_NODE" );
+  _intermediate_pool = &_memory_resources[atoi(val)];
 }
 
 std::ostream& operator<<(std::ostream& stream, const Topology& topology) {
