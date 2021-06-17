@@ -33,6 +33,8 @@ AbstractTableGenerator::AbstractTableGenerator(const std::shared_ptr<BenchmarkCo
 void AbstractTableGenerator::generate_and_store() {
   Timer timer;
 
+  numa::PlaceGuard placeGuard{ Hyrise::get().topology.get_table_pool()->get_mem_source() };
+
   std::cout << "- Loading/Generating tables " << std::endl;
   auto table_info_by_name = generate();
   metrics.generation_duration = timer.lap();
@@ -285,7 +287,7 @@ void AbstractTableGenerator::generate_and_store() {
 
   /**
    * Move Tables to the Table Memory Pool
-   */
+   */ /*
   {
     const char * val = std::getenv( "TABLE_POOL_NODE" );
     int node_id = atoi(val);
@@ -298,7 +300,7 @@ void AbstractTableGenerator::generate_and_store() {
           chunk->migrate(Hyrise::get().topology.get_memory_resource(node_id));
       }
     }
-  }
+  } */
 
   /**
    * Create indexes if requested by the user

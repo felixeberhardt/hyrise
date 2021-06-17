@@ -83,7 +83,9 @@ class Topology final : public Noncopyable {
   size_t num_cpus() const;
 
   boost::container::pmr::memory_resource* get_memory_resource(int node_id);
+  NUMAMemoryResource* get_table_pool();
   NUMAMemoryResource* get_intermediate_pool();
+  NUMAMemoryResource* get_statistics_pool();
 
  private:
   Topology();
@@ -107,7 +109,9 @@ class Topology final : public Noncopyable {
   static const int _number_of_hardware_nodes;
 
   std::vector<NUMAMemoryResource> _memory_resources;
+  NUMAMemoryResource *_table_pool;
   NUMAMemoryResource *_intermediate_pool;
+  NUMAMemoryResource *_statistics_pool;
 };
 
 std::ostream& operator<<(std::ostream& stream, const Topology& topology);

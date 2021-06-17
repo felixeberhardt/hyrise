@@ -174,8 +174,16 @@ boost::container::pmr::memory_resource* Topology::get_memory_resource(int node_i
   return &_memory_resources[static_cast<size_t>(node_id)];
 }
 
+NUMAMemoryResource* Topology::get_table_pool() {
+  return _table_pool;
+}
+
 NUMAMemoryResource* Topology::get_intermediate_pool() {
   return _intermediate_pool;
+}
+
+NUMAMemoryResource* Topology::get_statistics_pool() {
+  return _statistics_pool;
 }
 
 void Topology::_clear() {
@@ -196,6 +204,10 @@ void Topology::_create_memory_resources() {
   }
   char *val = std::getenv( "TMP_POOL_NODE" );
   _intermediate_pool = &_memory_resources[atoi(val)];
+  val = std::getenv( "TABLE_POOL_NODE" );
+  _table_pool = &_memory_resources[atoi(val)];
+  val = std::getenv( "STX_POOL_NODE" );
+  _statistics_pool = &_memory_resources[atoi(val)];
 }
 
 std::ostream& operator<<(std::ostream& stream, const Topology& topology) {
