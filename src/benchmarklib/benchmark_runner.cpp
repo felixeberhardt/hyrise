@@ -4,6 +4,13 @@
 #include <fstream>
 #include <random>
 
+#include <sys/syscall.h>
+#include <sys/ioctl.h>
+#include <linux/perf_event.h>
+#include <linux/hw_breakpoint.h>
+#include <unistd.h>
+
+
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/mean.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
@@ -25,6 +32,14 @@
 #include "version.hpp"
 
 namespace opossum {
+
+struct read_format {
+  uint64_t nr;
+  struct {
+    uint64_t value;
+    uint64_t id;
+  } values[4];
+};
 
 BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig& config,
                                  std::unique_ptr<AbstractBenchmarkItemRunner> benchmark_item_runner,
@@ -304,9 +319,81 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
 
   auto task = std::make_shared<JobTask>(
       [&, item_id]() {
+        //Initialize Counter
+        struct perf_event_attr pea;
+        int fd1, fd2, fd3, fd4;
+        uint64_t id1, id2, id3, id4;
+        double val1, val2, val3, val4;
+        char buf[4096];
+        struct read_format* rf = (struct read_format*) buf;
+
+        //leader
+        memset(&pea, 0, sizeof(struct perf_event_attr));
+        pea.type = PERF_TYPE_HARDWARE;
+        pea.size = sizeof(struct perf_event_attr);
+        pea.config = PERF_COUNT_HW_INSTRUCTIONS;
+        pea.disabled = 1;
+        pea.exclude_kernel = 1;
+        pea.exclude_hv = 1;
+        pea.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+        fd1 = syscall(__NR_perf_event_open, &pea, 0, -1, -1, 0);
+        ioctl(fd1, PERF_EVENT_IOC_ID, &id1);
+
+        memset(&pea, 0, sizeof(struct perf_event_attr));
+        pea.type = PERF_TYPE_HARDWARE;
+        pea.size = sizeof(struct perf_event_attr);
+        pea.config = PERF_COUNT_HW_CPU_CYCLES;
+        pea.disabled = 1;
+        pea.exclude_kernel = 1;
+        pea.exclude_hv = 1;
+        pea.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+        fd2 = syscall(__NR_perf_event_open, &pea, 0, -1, fd1 /*!!!*/, 0);
+        ioctl(fd2, PERF_EVENT_IOC_ID, &id2);
+
+        memset(&pea, 0, sizeof(struct perf_event_attr));
+        pea.type = PERF_TYPE_HW_CACHE;
+        pea.size = sizeof(struct perf_event_attr);
+        pea.config = PERF_COUNT_HW_CACHE_LL  | PERF_COUNT_HW_CACHE_OP_READ << 8 | PERF_COUNT_HW_CACHE_RESULT_MISS << 16;
+        pea.disabled = 1;
+        pea.exclude_kernel = 1;
+        pea.exclude_hv = 1;
+        pea.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+        fd3 = syscall(__NR_perf_event_open, &pea, 0, -1, fd1 /*!!!*/, 0);
+        ioctl(fd3, PERF_EVENT_IOC_ID, &id3);
+        
+        memset(&pea, 0, sizeof(struct perf_event_attr));
+        pea.type = PERF_TYPE_HW_CACHE;
+        pea.size = sizeof(struct perf_event_attr);
+        pea.config = PERF_COUNT_HW_CACHE_LL  | PERF_COUNT_HW_CACHE_OP_WRITE << 8 | PERF_COUNT_HW_CACHE_RESULT_MISS << 16;
+        pea.disabled = 1;
+        pea.exclude_kernel = 1;
+        pea.exclude_hv = 1;
+        pea.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
+        fd4 = syscall(__NR_perf_event_open, &pea, 0, -1, fd1 /*!!!*/, 0);
+        ioctl(fd4, PERF_EVENT_IOC_ID, &id4);
+
+        ioctl(fd1, PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP);
+        ioctl(fd1, PERF_EVENT_IOC_ENABLE, PERF_IOC_FLAG_GROUP);
+        
         const auto run_start = std::chrono::system_clock::now();
         auto [success, metrics, any_run_verification_failed] = _benchmark_item_runner->execute_item(item_id);
         const auto run_end = std::chrono::system_clock::now();
+        //Read Counter
+        read(fd1, buf, sizeof(buf));
+        for (uint64_t i = 0; i < rf->nr; i++) {
+          if (rf->values[i].id == id1) {
+            val1 = (double) rf->values[i].value;
+          }   else if (rf->values[i].id == id2) {
+            val2 = (double) rf->values[i].value;
+          }
+          else if (rf->values[i].id == id3) {
+            val3 = (double) rf->values[i].value;
+          }
+          else if (rf->values[i].id == id4) {
+            val4 = (double) rf->values[i].value;
+          }
+        }
+        std::unordered_map<std::string, double> perf_counters = {{"IPC", val1 / val2}, {"LLCMP1KI", (val3 + val4) / (val1 / 1000)}};
 
         --_currently_running_clients;
         ++_total_finished_runs;
@@ -317,7 +404,7 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
         if (!_state.is_done()) {  // To prevent items from adding their result after the time is up
           if (!_config.metrics) metrics.clear();
           const auto item_result =
-              BenchmarkItemRunResult{run_start - _benchmark_start, run_end - run_start, std::move(metrics)};
+              BenchmarkItemRunResult{run_start - _benchmark_start, run_end - run_start, std::move(perf_counters), std::move(metrics)};
           if (success) {
             result.successful_runs.push_back(item_result);
           } else {
@@ -373,6 +460,14 @@ void BenchmarkRunner::write_report_to_file() const {
     const auto runs_to_json = [](auto runs) {
       auto runs_json = nlohmann::json::array();
       for (const auto& run_result : runs) {
+        // Convert Perf Counter into JSON
+        auto all_perf_counter_metrics_json = nlohmann::json::array();
+        for(const auto& [key, value] : run_result.perf_counter) {
+          nlohmann::json perf_counter_metric_json;
+          perf_counter_metric_json[key] = value;
+          all_perf_counter_metrics_json.push_back(perf_counter_metric_json);
+        }
+
         // Convert the SQLPipelineMetrics for each run of the BenchmarkItem into JSON
         auto all_pipeline_metrics_json = nlohmann::json::array();
         // metrics can be empty if _config.metrics is false
@@ -402,6 +497,7 @@ void BenchmarkRunner::write_report_to_file() const {
 
         runs_json.push_back(nlohmann::json{{"begin", run_result.begin.count()},
                                            {"duration", run_result.duration.count()},
+                                           {"perf_counter", all_perf_counter_metrics_json},
                                            {"metrics", all_pipeline_metrics_json}});
       }
       return runs_json;

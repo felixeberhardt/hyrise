@@ -156,8 +156,8 @@ add_note_for_insufficient_pvalue_runs = False  # Flag set when runs was insuffic
 # $latency and $thrghpt (abbreviated to keep the column at a max width of 8 chars) will later be replaced with a title
 # spanning two columns
 table_data = []
-table_data.append(["Item", "$latency", "", "Change", "$thrghpt", "", "Change", "p-value"])
-table_data.append(["", "old", "new", "", "old", "new", "", ""])
+table_data.append(["Item", "$latency", "", "", "", "", "", "Change", "$thrghpt", "", "Change", "p-value"])
+table_data.append(["", "old ms", "IPC", "LLCMP1KI", "new ms", "IPC", "LLCMP1KI", "", "old", "new", "", ""])
 
 for old, new in zip(old_data["benchmarks"], new_data["benchmarks"]):
     name = old["name"]
@@ -167,10 +167,22 @@ for old, new in zip(old_data["benchmarks"], new_data["benchmarks"]):
     # Create numpy arrays for old/new successful/unsuccessful runs from benchmark dictionary
     old_successful_durations = np.array([run["duration"] for run in old["successful_runs"]], dtype=np.float64)
     new_successful_durations = np.array([run["duration"] for run in new["successful_runs"]], dtype=np.float64)
+    old_successful_ipc = np.array([run["perf_counter"][1]["IPC"] for run in old["successful_runs"]], dtype=np.float64)
+    new_successful_ipc = np.array([run["perf_counter"][1]["IPC"] for run in new["successful_runs"]], dtype=np.float64)
+    old_successful_llcmp1ki = np.array([run["perf_counter"][0]["LLCMP1KI"] for run in old["successful_runs"]], dtype=np.float64)
+    new_successful_llcmp1ki = np.array([run["perf_counter"][0]["LLCMP1KI"] for run in new["successful_runs"]], dtype=np.float64)
     old_unsuccessful_durations = np.array([run["duration"] for run in old["unsuccessful_runs"]], dtype=np.float64)
     new_unsuccessful_durations = np.array([run["duration"] for run in new["unsuccessful_runs"]], dtype=np.float64)
+    old_unsuccessful_ipc = np.array([run["perf_counter"][1]["IPC"] for run in old["successful_runs"]], dtype=np.float64)
+    new_unsuccessful_ipc = np.array([run["perf_counter"][1]["IPC"] for run in new["successful_runs"]], dtype=np.float64)
+    old_unsuccessful_llcmp1ki = np.array([run["perf_counter"][0]["LLCMP1KI"] for run in old["successful_runs"]], dtype=np.float64)
+    new_unsuccessful_llcmp1ki = np.array([run["perf_counter"][0]["LLCMP1KI"] for run in new["successful_runs"]], dtype=np.float64)
     old_avg_successful_duration = np.mean(old_successful_durations)  # defaults to np.float64 for int input
     new_avg_successful_duration = np.mean(new_successful_durations)
+    old_avg_successful_ipc = np.mean(old_successful_ipc)
+    old_avg_successful_llcmp1ki = np.mean(old_successful_llcmp1ki)
+    new_avg_successful_ipc = np.mean(new_successful_ipc)
+    new_avg_successful_llcmp1ki = np.mean(new_successful_llcmp1ki)
 
     total_runtime_old += old_avg_successful_duration if not math.isnan(old_avg_successful_duration) else 0.0
     total_runtime_new += new_avg_successful_duration if not math.isnan(new_avg_successful_duration) else 0.0
@@ -211,7 +223,11 @@ for old, new in zip(old_data["benchmarks"], new_data["benchmarks"]):
         [
             name,
             f"{(old_avg_successful_duration / 1e6):>7.1f}" if old_avg_successful_duration else "nan",
+            f"{(old_avg_successful_ipc):>8.2f}",
+            f"{(old_avg_successful_llcmp1ki):>8.3f}",
             f"{(new_avg_successful_duration / 1e6):>7.1f}" if new_avg_successful_duration else "nan",
+            f"{(new_avg_successful_ipc):>8.2f}",
+            f"{(new_avg_successful_llcmp1ki):>8.3f}",
             diff_duration_formatted + note if not math.isnan(diff_duration) else "",
             f'{old["items_per_second"]:>8.2f}',
             f'{new["items_per_second"]:>8.2f}',
