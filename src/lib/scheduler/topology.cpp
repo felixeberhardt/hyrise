@@ -203,11 +203,11 @@ void Topology::_create_memory_resources() {
     _memory_resources.emplace_back(NUMAMemoryResource(system_node_id, memsource_name.str()));
   }
   char *val = std::getenv( "TMP_POOL_NODE" );
-  _intermediate_pool = &_memory_resources[atoi(val)];
+  _intermediate_pool = &_memory_resources[val ? atoi(val) : 0];
   val = std::getenv( "TABLE_POOL_NODE" );
-  _table_pool = &_memory_resources[atoi(val)];
+  _table_pool = &_memory_resources[val ? atoi(val) : 0];
   val = std::getenv( "STX_POOL_NODE" );
-  _statistics_pool = &_memory_resources[atoi(val)];
+  _statistics_pool = &_memory_resources[val ? atoi(val) : 0];
 }
 
 std::ostream& operator<<(std::ostream& stream, const Topology& topology) {

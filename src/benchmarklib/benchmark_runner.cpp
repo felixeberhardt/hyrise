@@ -323,8 +323,8 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
         struct perf_event_attr pea;
         int fd1, fd2, fd3, fd4;
         uint64_t id1, id2, id3, id4;
-        double val1, val2, val3, val4;
-        char buf[4096];
+        double val1 = 0, val2 = 0, val3 = 0, val4 = 0;
+        char buf[4096] = { 0 };
         struct read_format* rf = (struct read_format*) buf;
 
         //leader
@@ -337,6 +337,10 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
         pea.exclude_hv = 1;
         pea.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
         fd1 = syscall(__NR_perf_event_open, &pea, 0, -1, -1, 0);
+        if (fd1 == -1) {
+          perror("perf_event_open 1");
+          exit(2);
+        }
         ioctl(fd1, PERF_EVENT_IOC_ID, &id1);
 
         memset(&pea, 0, sizeof(struct perf_event_attr));
@@ -348,6 +352,10 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
         pea.exclude_hv = 1;
         pea.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
         fd2 = syscall(__NR_perf_event_open, &pea, 0, -1, fd1 /*!!!*/, 0);
+        if (fd2 == -1) {
+          perror("perf_event_open 2");
+          exit(2);
+        }
         ioctl(fd2, PERF_EVENT_IOC_ID, &id2);
 
         memset(&pea, 0, sizeof(struct perf_event_attr));
@@ -359,8 +367,12 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
         pea.exclude_hv = 1;
         pea.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
         fd3 = syscall(__NR_perf_event_open, &pea, 0, -1, fd1 /*!!!*/, 0);
+        if (fd3 == -1) {
+          perror("perf_event_open 3");
+          exit(2);
+        }
         ioctl(fd3, PERF_EVENT_IOC_ID, &id3);
-        
+
         memset(&pea, 0, sizeof(struct perf_event_attr));
         pea.type = PERF_TYPE_HW_CACHE;
         pea.size = sizeof(struct perf_event_attr);
@@ -370,6 +382,10 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
         pea.exclude_hv = 1;
         pea.read_format = PERF_FORMAT_GROUP | PERF_FORMAT_ID;
         fd4 = syscall(__NR_perf_event_open, &pea, 0, -1, fd1 /*!!!*/, 0);
+        if (fd4 == -1) {
+          perror("perf_event_open 4");
+          exit(2);
+        }
         ioctl(fd4, PERF_EVENT_IOC_ID, &id4);
 
         ioctl(fd1, PERF_EVENT_IOC_RESET, PERF_IOC_FLAG_GROUP);
@@ -379,7 +395,7 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
         auto [success, metrics, any_run_verification_failed] = _benchmark_item_runner->execute_item(item_id);
         const auto run_end = std::chrono::system_clock::now();
         //Read Counter
-        read(fd1, buf, sizeof(buf));
+        (void)!read(fd1, buf, sizeof(buf));
         for (uint64_t i = 0; i < rf->nr; i++) {
           if (rf->values[i].id == id1) {
             val1 = (double) rf->values[i].value;
@@ -394,6 +410,11 @@ void BenchmarkRunner::_schedule_item_run(const BenchmarkItemID item_id) {
           }
         }
         std::unordered_map<std::string, double> perf_counters = {{"IPC", val1 / val2}, {"LLCMP1KI", (val3 + val4) / (val1 / 1000)}};
+
+        close(fd1);
+        close(fd2);
+        close(fd3);
+        close(fd4);
 
         --_currently_running_clients;
         ++_total_finished_runs;
