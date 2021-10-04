@@ -221,6 +221,8 @@ set(
     operators/join_verification.hpp
     operators/limit.cpp
     operators/limit.hpp
+    operators/materialize.cpp
+    operators/materialize.hpp
     operators/maintenance/create_prepared_plan.cpp
     operators/maintenance/create_prepared_plan.hpp
     operators/maintenance/create_table.cpp
