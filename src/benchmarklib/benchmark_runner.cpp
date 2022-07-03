@@ -77,6 +77,8 @@ BenchmarkRunner::BenchmarkRunner(const BenchmarkConfig& config,
 }
 
 void BenchmarkRunner::run() {
+//beginning of endless loop hack
+while(true) {
   std::cout << "- Starting Benchmark..." << std::endl;
 
   _benchmark_start = std::chrono::steady_clock::now();
@@ -178,6 +180,13 @@ void BenchmarkRunner::run() {
   // Stop the thread that tracks the system utilization
   track_system_utilization = false;
   system_utilization_tracker.join();
+
+unsigned long node;
+std::cout << "Another Round, with a different memory policy? Please specify NUMA node." << std::endl;
+std::cout << "> ";
+std::cin >> node;
+Hyrise::get().set_scheduler(std::make_shared<ImmediateExecutionScheduler>(node));
+}
 }
 
 void BenchmarkRunner::_benchmark_shuffled() {

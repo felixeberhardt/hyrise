@@ -10,6 +10,8 @@ namespace opossum {
  */
 class ImmediateExecutionScheduler : public AbstractScheduler {
  public:
+  ImmediateExecutionScheduler(int node = -1);
+
   void begin() override;
 
   void wait_for_all_tasks() override;

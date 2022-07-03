@@ -1,6 +1,21 @@
 #include "immediate_execution_scheduler.hpp"
+#include <numaif.h>
+#include <numa.h>
 
 namespace opossum {
+ImmediateExecutionScheduler::ImmediateExecutionScheduler(int node) {
+  if(node != -1) {
+    struct bitmask *pol_mask;
+    int nnodes = numa_max_possible_node() + 1;
+    pol_mask = numa_bitmask_alloc(nnodes);
+    numa_bitmask_setbit(pol_mask, node);
+    long ret = set_mempolicy(MPOL_BIND, pol_mask->maskp, pol_mask->size + 1);
+    if (ret == -1)
+    {
+      fprintf(stderr, "error: %s\n", strerror(errno));
+    } 
+  }
+}
 
 void ImmediateExecutionScheduler::begin() {}
 
