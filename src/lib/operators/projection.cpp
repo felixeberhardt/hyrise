@@ -65,7 +65,7 @@ void Projection::_on_set_transaction_context(const std::weak_ptr<TransactionCont
 
 std::shared_ptr<const Table> Projection::_on_execute() {
   auto timer = Timer{};
-
+  moses::PlaceGuard guard(&Hyrise::get().places.at("projection"));
   const auto& input_table = *left_input_table();
 
   // Determine the type of the output table: If no input columns are forwarded, i.e., all output columns are newly

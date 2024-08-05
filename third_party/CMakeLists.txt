@@ -116,7 +116,7 @@ target_sources(uninitialized_vector INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/uninit
 
 
 # Build custom jemalloc library
-if(NOT APPLE)
+if(NOT APPLE AND ${MEMORY_ALLOCATOR} STREQUAL "jemalloc")
   # Only configure jemalloc for non-Apple builds, as we cannot properly replace the allocator on Mac using static linking:
   #   If you ./configure jemalloc with --with-jemalloc-prefix="" on OSX and static link the library, your malloc's will
   #   be handled by jemalloc. However, dynamically linked libraries will still use the default system zone. That is, any
@@ -165,6 +165,9 @@ if(NOT APPLE)
   set_target_properties(custom_jemalloc PROPERTIES IMPORTED_LOCATION ${JEMALLOC_LIB_PATH})
 endif()
 
+if(${MEMORY_ALLOCATOR} STREQUAL "moses")
+  add_subdirectory(moses)
+endif()
 
 # Build tpcds_dbgen library
 set(TPCDS_KIT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tpcds-kit/tools)

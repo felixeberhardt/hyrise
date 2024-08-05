@@ -7,6 +7,10 @@
 #include <utility>
 #include <vector>
 
+#ifdef HYRISE_WITH_MOSES
+#include <moses.h>
+#endif
+
 #include "all_type_variant.hpp"
 #include "attribute_statistics.hpp"
 #include "hyrise.hpp"
@@ -22,6 +26,7 @@
 namespace hyrise {
 
 std::shared_ptr<TableStatistics> TableStatistics::from_table(const Table& table) {
+  moses::PlaceGuard guard(&Hyrise::get().places.at("table_statistics"));
   const auto column_count = table.column_count();
   auto column_statistics = std::vector<std::shared_ptr<const BaseAttributeStatistics>>{column_count};
 

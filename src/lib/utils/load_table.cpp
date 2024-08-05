@@ -41,7 +41,7 @@ std::shared_ptr<Table> create_table_from_header(std::ifstream& infile, ChunkOffs
   for (auto index = size_t{0}; index < column_name_count; ++index) {
     const auto data_type = data_type_to_string.right.find(column_types[index]);
     Assert(data_type != data_type_to_string.right.end(),
-           std::string("Invalid data type ") + column_types[index] + " for column " + column_names[index] + ".");
+           "Invalid data type " + column_types[index] + " for column " + column_names[index] + ".");
     column_definitions.emplace_back(column_names[index], data_type->second, column_nullable[index]);
   }
 

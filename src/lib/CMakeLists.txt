@@ -1,3 +1,16 @@
+# Function to print include directories for a target
+function(print_target_includes target)
+    get_target_property(dirs ${target} INCLUDE_DIRECTORIES)
+    if(NOT dirs)
+        message(STATUS "No include directories for target ${target}")
+    else()
+        message(STATUS "Include directories for target ${target}:")
+        foreach(dir ${dirs})
+            message(STATUS "  ${dir}")
+        endforeach()
+    endif()
+endfunction()
+
 # Setup the version.hpp file.
 # Include this here because we need the GENERATED property on version.hpp and in CMake that property has directory
 # scope
@@ -732,7 +745,7 @@ set_source_files_properties(
 # -rdynamic tells the linker to export the library's symbols so that plugins can use them.
 target_link_libraries(hyrise_impl PUBLIC ${LIBRARIES} -rdynamic)
 
-if(NOT APPLE)
+if(NOT APPLE AND ${MEMORY_ALLOCATOR} STREQUAL "jemalloc")
     # Do not use jemalloc on Mac as we cannot properly replace the allocator - see third_party/CMakeLists.txt for details.
     target_link_libraries(hyrise_impl PUBLIC custom_jemalloc -rdynamic)
     target_compile_definitions(hyrise_impl PUBLIC HYRISE_WITH_JEMALLOC)
@@ -741,6 +754,11 @@ if(NOT APPLE)
     # We need to use a path relative to CMAKE_CURRENT_BINARY_DIR instead of using CMAKE_BINARY_DIR because Hyrise might
     # not be the top-level CMake project (e.g., if it is used as a submodule in a Hyrise plugin repository).
     target_include_directories(hyrise_impl SYSTEM PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/../../third_party/jemalloc/include)
+elseif(${MEMORY_ALLOCATOR} STREQUAL "moses")
+    message(STATUS "Building with moses enabled.")
+    target_link_libraries(hyrise_impl PUBLIC moses)
+    target_compile_definitions(hyrise_impl PUBLIC HYRISE_WITH_MOSES)
+    target_include_directories(hyrise_impl PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/../../../third_party/moses/libmoses)
 endif()
 
 target_link_libraries_system(
@@ -803,3 +821,5 @@ add_custom_target(resourceLink
 )
 
 add_dependencies(hyrise resourceLink)
+
+print_target_includes(hyrise_impl)

@@ -32,6 +32,8 @@ function(add_plugin)
     if (APPLE)
         target_link_libraries(${PARSED_ARGS_NAME} PRIVATE "-undefined dynamic_lookup")
     endif()
+
+    target_include_directories(${PARSED_ARGS_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../../third_party/moses/libmoses ${CMAKE_CURRENT_BINARY_DIR}/../../../third_party/moses/jemalloc/include)
 endfunction(add_plugin)
 
 add_plugin(NAME hyriseMvccDeletePlugin SRCS mvcc_delete_plugin.cpp mvcc_delete_plugin.hpp DEPS gtest magic_enum)

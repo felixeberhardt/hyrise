@@ -119,7 +119,7 @@ std::shared_ptr<const Table> JoinHash::_on_execute() {
                    right_input_table()->column_data_type(_primary_predicate.column_ids.second),
                    !_secondary_predicates.empty(), left_input_table()->type(), right_input_table()->type()}),
          "JoinHash does not support these parameters.");
-
+  moses::PlaceGuard guard(&Hyrise::get().places.at("joinhash"));
   auto build_input_table = std::shared_ptr<const Table>{};
   auto probe_input_table = std::shared_ptr<const Table>{};
   auto build_column_id = ColumnID{};

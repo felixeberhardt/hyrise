@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <moses.h>
+
 #include "nlohmann/json.hpp"
 
 #include "benchmark_config.hpp"
@@ -455,6 +457,7 @@ bool AbstractTableGenerator::_all_chunks_sorted_by(const std::shared_ptr<Table>&
 
 std::unordered_map<std::string, BenchmarkTableInfo> AbstractTableGenerator::_load_binary_tables_from_path(
     const std::string& cache_directory) {
+  moses::PlaceGuard guard(&Hyrise::get().places.at("table"));
   auto table_info_by_name = std::unordered_map<std::string, BenchmarkTableInfo>{};
 
   for (const auto& table_file : list_directory(cache_directory)) {

@@ -55,6 +55,19 @@ else()
     compiler_not_supported("You are using an unsupported compiler (${CMAKE_CXX_COMPILER_ID})! Compilation has only been tested with Clang (Linux + OS X) and GCC (Linux).")
 endif()
 
+# Choose the memory allocator for Hyrise
+set(ALLOWED_MEMORY_ALLOCATORS "system" "jemalloc" "moses")
+
+# Define the option with a default value
+set(MEMORY_ALLOCATOR "jemalloc" CACHE STRING "Choose the memory allocator for Hyrise.")
+set_property(CACHE MEMORY_ALLOCATOR PROPERTY STRINGS ${ALLOWED_MEMORY_ALLOCATORS})
+
+# Validate the option value
+list(FIND ALLOWED_MEMORY_ALLOCATORS "${MEMORY_ALLOCATOR}" _index)
+if(_index EQUAL -1)
+  message(FATAL_ERROR "Invalid value for MEMORY_ALLOCATOR: ${MEMORY_ALLOCATOR}. Allowed values are: ${ALLOWED_MEMORY_ALLOCATORS}")
+endif()
+
 # Enable address and undefined behavior sanitization if requested
 option(ENABLE_ADDR_UB_LEAK_SANITIZATION "Set to ON to build Hyrise with ASAN and UBSAN enabled. Default: OFF" OFF)
 if (${ENABLE_ADDR_UB_LEAK_SANITIZATION})

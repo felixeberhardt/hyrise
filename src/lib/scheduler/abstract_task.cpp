@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <moses.h>
+
 #include "hyrise.hpp"
 #include "types.hpp"
 #include "utils/assert.hpp"
@@ -127,6 +129,7 @@ void AbstractTask::_join() {
 }
 
 void AbstractTask::execute() {
+  moses::PlaceGuard guard(&Hyrise::get().places.at("temp"));
   {
     const auto success_started = _try_transition_to(TaskState::Started);
     Assert(success_started, "Expected successful transition to TaskState::Started.");

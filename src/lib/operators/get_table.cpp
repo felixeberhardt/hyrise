@@ -134,6 +134,7 @@ std::shared_ptr<AbstractOperator> GetTable::_on_deep_copy(
 void GetTable::_on_set_parameters(const std::unordered_map<ParameterID, AllTypeVariant>& parameters) {}
 
 std::shared_ptr<const Table> GetTable::_on_execute() {
+  moses::PlaceGuard guard(&Hyrise::get().places.at("gettable"));
   const auto stored_table = Hyrise::get().storage_manager.get_table(_name);
 
   // The chunk count might change while we are in this method as other threads concurrently insert new data. MVCC
