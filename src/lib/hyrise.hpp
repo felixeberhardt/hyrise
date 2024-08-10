@@ -4,7 +4,9 @@
 #include <map>
 #include <string>
 
+#ifdef HYRISE_WITH_MOSES
 #include "moses.h"
+#endif
 
 #include "concurrency/transaction_manager.hpp"
 #include "scheduler/abstract_scheduler.hpp"
@@ -60,7 +62,9 @@ class Hyrise : public Singleton<Hyrise> {
   // result JSON.
   std::weak_ptr<BenchmarkRunner> benchmark_runner;
 
+#ifdef HYRISE_WITH_MOSES
   std::map<std::string, moses::Place> places;
+#endif
 
  private:
   Hyrise();

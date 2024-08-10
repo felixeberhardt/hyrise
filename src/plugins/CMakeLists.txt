@@ -33,6 +33,11 @@ function(add_plugin)
         target_link_libraries(${PARSED_ARGS_NAME} PRIVATE "-undefined dynamic_lookup")
     endif()
 
+    if(${MEMORY_ALLOCATOR} STREQUAL "moses")
+	target_compile_definitions(${PARSED_ARGS_NAME} PUBLIC HYRISE_WITH_MOSES)
+	target_include_directories(${PARSED_ARGS_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/../../../third_party/moses/libmoses)
+    endif()
+
     target_include_directories(${PARSED_ARGS_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/../../../third_party/moses/libmoses ${CMAKE_CURRENT_BINARY_DIR}/../../../third_party/moses/jemalloc/include)
 endfunction(add_plugin)
 

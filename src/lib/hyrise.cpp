@@ -23,6 +23,7 @@ Hyrise::Hyrise() {
   // important that the resource has not been destructed before. As objects are destructed in the reverse order of their
   // construction, explicitly initializing the resource first means that it is destructed last.
   boost::container::pmr::get_default_resource();
+#ifdef HYRISE_WITH_MOSES
   places = {
     {"base", moses::Place("/mnt/moses/base", "base", moses::contention::LOW)},
     {"table", moses::Place("/mnt/moses/long_lived", "table", moses::contention::LOW)},
@@ -35,6 +36,7 @@ Hyrise::Hyrise() {
     };
   moses::Moses::Initialize(&places);
   moses::PlaceGuard guard(&places.at("base"));
+#endif
 
   storage_manager = StorageManager{};
   plugin_manager = PluginManager{};
