@@ -18,6 +18,8 @@
 #include "storage/value_segment.hpp"
 #include "storage/vector_compression/bitpacking/bitpacking_vector_type.hpp"
 
+#include "memory/moses_memory_resource.hpp"
+
 namespace hyrise {
 
 /*
@@ -112,6 +114,8 @@ class BinaryParser {
   // Reads a single value of type T from the input file.
   template <typename T>
   static T _read_value(std::ifstream& file);
+
+  static std::shared_ptr<MosesMemoryResource> mos_mem_src;
 };
 
 }  // namespace hyrise

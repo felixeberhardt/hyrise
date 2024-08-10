@@ -33,10 +33,16 @@
 #include "types.hpp"
 #include "utils/assert.hpp"
 #include "utils/enum_constant.hpp"
+#include "hyrise.hpp"
 
 namespace hyrise {
 
+std::shared_ptr<MosesMemoryResource> BinaryParser::mos_mem_src = nullptr;
+
 std::shared_ptr<Table> BinaryParser::parse(const std::string& filename) {
+  std::shared_ptr<moses::Place> place_ptr = std::make_shared<moses::Place>(Hyrise::get().places.at("table"));
+  auto p = std::filesystem::path(filename);
+  mos_mem_src = std::make_shared<MosesMemoryResource>(place_ptr, p.stem().string());
   std::ifstream file;
   file.open(filename, std::ios::binary);
   file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -52,14 +58,16 @@ std::shared_ptr<Table> BinaryParser::parse(const std::string& filename) {
 template <typename T>
 pmr_compact_vector BinaryParser::_read_values_compact_vector(std::ifstream& file, const size_t count) {
   const auto bit_width = _read_value<uint8_t>(file);
-  auto values = pmr_compact_vector(bit_width, count);
+  PolymorphicAllocator<pmr_compact_vector> alloc = PolymorphicAllocator<pmr_compact_vector>(mos_mem_src.get());
+  auto values = pmr_compact_vector(bit_width, count, alloc);
   file.read(reinterpret_cast<char*>(values.get()), static_cast<int64_t>(values.bytes()));
   return values;
 }
 
 template <typename T>
 pmr_vector<T> BinaryParser::_read_values(std::ifstream& file, const size_t count) {
-  pmr_vector<T> values(count);
+  PolymorphicAllocator<pmr_vector<T>> alloc = PolymorphicAllocator<pmr_vector<T>>(mos_mem_src.get());
+  pmr_vector<T> values(count, alloc);
   file.read(reinterpret_cast<char*>(values.data()), values.size() * sizeof(T));
   return values;
 }
@@ -73,7 +81,8 @@ pmr_vector<pmr_string> BinaryParser::_read_values(std::ifstream& file, const siz
 // specialized implementation for bool values
 template <>
 pmr_vector<bool> BinaryParser::_read_values(std::ifstream& file, const size_t count) {
-  pmr_vector<BoolAsByteType> readable_bools(count);
+  PolymorphicAllocator<pmr_vector<BoolAsByteType>> alloc = PolymorphicAllocator<pmr_vector<BoolAsByteType>>(mos_mem_src.get());
+  pmr_vector<BoolAsByteType> readable_bools(count, alloc);
   file.read(reinterpret_cast<char*>(readable_bools.data()),
             static_cast<int64_t>(readable_bools.size() * sizeof(BoolAsByteType)));
   return {readable_bools.begin(), readable_bools.end()};
@@ -83,8 +92,12 @@ pmr_vector<pmr_string> BinaryParser::_read_string_values(std::ifstream& file, co
   const auto string_lengths = _read_values<size_t>(file, count);
   const auto total_length = std::accumulate(string_lengths.cbegin(), string_lengths.cend(), static_cast<size_t>(0));
   const auto buffer = _read_values<char>(file, total_length);
-
-  auto values = pmr_vector<pmr_string>{count};
+  
+  //need to reserve memory here
+  mos_mem_src->reserve(total_length * sizeof(char));
+  PolymorphicAllocator<pmr_vector<BoolAsByteType>> alloc = PolymorphicAllocator<pmr_vector<BoolAsByteType>>(mos_mem_src.get());
+  
+  auto values = pmr_vector<pmr_string>{count, alloc};
   auto start = size_t{0};
   for (auto index = size_t{0}; index < count; ++index) {
     values[index] = pmr_string{buffer.data() + start, buffer.data() + start + string_lengths[index]};
