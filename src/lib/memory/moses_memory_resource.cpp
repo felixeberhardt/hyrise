@@ -7,7 +7,11 @@
 
 namespace hyrise {
 
+#ifdef HYRISE_WITH_MOSES
 MosesMemoryResource::MosesMemoryResource(const std::shared_ptr<moses::Place> place, const std::string name) : _place(place) {
+#else
+MosesMemoryResource::MosesMemoryResource() {
+#endif
 
 #ifdef HYRISE_WITH_MOSES
     _alloc = std::make_shared<moses::MosesAllocator>(place, name);
@@ -17,7 +21,9 @@ MosesMemoryResource::MosesMemoryResource(const std::shared_ptr<moses::Place> pla
 }
 
 void MosesMemoryResource::reserve(std::size_t bytes) {
+#ifdef HYRISE_WITH_MOSES
   _alloc->Reserve(bytes);
+#endif
 }
 
 void* MosesMemoryResource::do_allocate(std::size_t bytes, std::size_t alignment) {

@@ -33,6 +33,8 @@ Hyrise::Hyrise() {
     {"joinhash", moses::Place("/mnt/moses/short_lived", "joinhash", moses::contention::HIGH)},
     {"projection", moses::Place("/mnt/moses/short_lived", "projection", moses::contention::HIGH)},
     {"gettable", moses::Place("/mnt/moses/short_lived", "gettable", moses::contention::HIGH)},
+    {"sort", moses::Place("/mnt/moses/short_lived", "sort", moses::contention::HIGH)},
+    {"tablescan", moses::Place("/mnt/moses/short_lived", "tablescan", moses::contention::HIGH)},
     };
   moses::Moses::Initialize(&places);
   moses::PlaceGuard guard(&places.at("base"));

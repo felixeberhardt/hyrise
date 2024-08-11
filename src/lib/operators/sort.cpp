@@ -28,6 +28,7 @@
 #include "types.hpp"
 #include "utils/assert.hpp"
 #include "utils/timer.hpp"
+#include "hyrise.hpp"
 
 namespace {
 
@@ -285,6 +286,9 @@ std::shared_ptr<AbstractOperator> Sort::_on_deep_copy(
 void Sort::_on_set_parameters(const std::unordered_map<ParameterID, AllTypeVariant>& parameters) {}
 
 std::shared_ptr<const Table> Sort::_on_execute() {
+#ifdef HYRISE_WITH_MOSES
+  moses::PlaceGuard guard(&Hyrise::get().places.at("sort"));
+#endif
   const auto& input_table = left_input_table();
 
   for (const auto& column_sort_definition : _sort_definitions) {

@@ -114,8 +114,9 @@ class BinaryParser {
   // Reads a single value of type T from the input file.
   template <typename T>
   static T _read_value(std::ifstream& file);
-
+#ifdef HYRISE_WITH_MOSES
   static std::shared_ptr<MosesMemoryResource> mos_mem_src;
+#endif
 };
 
 }  // namespace hyrise

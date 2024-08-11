@@ -100,6 +100,9 @@ std::shared_ptr<AbstractOperator> TableScan::_on_deep_copy(
 }
 
 std::shared_ptr<const Table> TableScan::_on_execute() {
+#ifdef HYRISE_WITH_MOSES
+  moses::PlaceGuard guard(&Hyrise::get().places.at("tablescan"));
+#endif
   DebugAssert(excluded_chunk_ids, "Excluded ChunkIDs vector has not been initialized.");
   DebugAssert(std::is_sorted(excluded_chunk_ids->cbegin(), excluded_chunk_ids->cend()),
               "Excluded ChunkIDs must be sorted.");
