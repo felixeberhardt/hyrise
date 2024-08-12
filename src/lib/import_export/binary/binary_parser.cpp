@@ -37,12 +37,14 @@
 
 namespace hyrise {
 
-#ifdef HYRISE_WITH_MOSES
+#define REDIRECT_TABLES
+
+#if defined(HYRISE_WITH_MOSES) && defined(REDIRECT_TABLES)
 std::shared_ptr<MosesMemoryResource> BinaryParser::mos_mem_src = nullptr;
 #endif
 
 std::shared_ptr<Table> BinaryParser::parse(const std::string& filename) {
-#ifdef HYRISE_WITH_MOSES
+#if defined(HYRISE_WITH_MOSES) && defined(REDIRECT_TABLES)
   std::shared_ptr<moses::Place> place_ptr = std::make_shared<moses::Place>(Hyrise::get().places.at("table"));
   auto p = std::filesystem::path(filename);
   mos_mem_src = std::make_shared<MosesMemoryResource>(place_ptr, p.stem().string());
@@ -62,7 +64,7 @@ std::shared_ptr<Table> BinaryParser::parse(const std::string& filename) {
 template <typename T>
 pmr_compact_vector BinaryParser::_read_values_compact_vector(std::ifstream& file, const size_t count) {
   const auto bit_width = _read_value<uint8_t>(file);
-#ifdef HYRISE_WITH_MOSES
+#if defined(HYRISE_WITH_MOSES) && defined(REDIRECT_TABLES)
   PolymorphicAllocator<pmr_compact_vector> alloc = PolymorphicAllocator<pmr_compact_vector>(mos_mem_src.get());
   auto values = pmr_compact_vector(bit_width, count, alloc);
 #else
@@ -74,7 +76,7 @@ pmr_compact_vector BinaryParser::_read_values_compact_vector(std::ifstream& file
 
 template <typename T>
 pmr_vector<T> BinaryParser::_read_values(std::ifstream& file, const size_t count) {
-#ifdef HYRISE_WITH_MOSES
+#if defined(HYRISE_WITH_MOSES) && defined(REDIRECT_TABLES)
   PolymorphicAllocator<pmr_vector<T>> alloc = PolymorphicAllocator<pmr_vector<T>>(mos_mem_src.get());
   pmr_vector<T> values(count, alloc);
 #else
@@ -93,7 +95,7 @@ pmr_vector<pmr_string> BinaryParser::_read_values(std::ifstream& file, const siz
 // specialized implementation for bool values
 template <>
 pmr_vector<bool> BinaryParser::_read_values(std::ifstream& file, const size_t count) {
-#ifdef HYRISE_WITH_MOSES
+#if defined(HYRISE_WITH_MOSES) && defined(REDIRECT_TABLES)
   PolymorphicAllocator<pmr_vector<BoolAsByteType>> alloc = PolymorphicAllocator<pmr_vector<BoolAsByteType>>(mos_mem_src.get());
   pmr_vector<BoolAsByteType> readable_bools(count, alloc);
 #else
@@ -109,7 +111,7 @@ pmr_vector<pmr_string> BinaryParser::_read_string_values(std::ifstream& file, co
   const auto total_length = std::accumulate(string_lengths.cbegin(), string_lengths.cend(), static_cast<size_t>(0));
   const auto buffer = _read_values<char>(file, total_length);
 
-#ifdef HYRISE_WITH_MOSES
+#if defined(HYRISE_WITH_MOSES) && defined(REDIRECT_TABLES)
   //need to reserve memory here
   mos_mem_src->reserve(total_length * sizeof(char));
   PolymorphicAllocator<pmr_vector<BoolAsByteType>> alloc = PolymorphicAllocator<pmr_vector<BoolAsByteType>>(mos_mem_src.get());  
