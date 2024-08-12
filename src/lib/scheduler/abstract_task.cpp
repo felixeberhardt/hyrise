@@ -127,9 +127,9 @@ void AbstractTask::_join() {
 }
 
 void AbstractTask::execute() {
-#ifdef HYRISE_WITH_MOSES
+/*#ifdef HYRISE_WITH_MOSES
   moses::PlaceGuard guard(&Hyrise::get().places.at("temp"));
-#endif
+#endif*/
   {
     const auto success_started = _try_transition_to(TaskState::Started);
     Assert(success_started, "Expected successful transition to TaskState::Started.");

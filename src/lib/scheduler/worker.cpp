@@ -67,6 +67,10 @@ void Worker::operator()() {
 
   _set_affinity();
 
+#ifdef HYRISE_WITH_MOSES
+  moses::PlaceGuard guard(&Hyrise::get().places.at("temp"));
+#endif
+
   while (Hyrise::get().scheduler()->active() && _active) {
     // Worker is allowed to sleep (when queue is empty) as long as the scheduler is not shutting down.
     _work(AllowSleep::Yes);
