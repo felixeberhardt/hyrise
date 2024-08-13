@@ -37,7 +37,8 @@
 
 namespace hyrise {
 
-#define REDIRECT_TABLES
+//#define REDIRECT_TABLES
+#define TABLE_PLACES
 
 #if defined(HYRISE_WITH_MOSES) && defined(REDIRECT_TABLES)
 std::shared_ptr<MosesMemoryResource> BinaryParser::mos_mem_src = nullptr;
@@ -45,9 +46,26 @@ std::shared_ptr<MosesMemoryResource> BinaryParser::mos_mem_src = nullptr;
 
 std::shared_ptr<Table> BinaryParser::parse(const std::string& filename) {
 #if defined(HYRISE_WITH_MOSES) && defined(REDIRECT_TABLES)
-  std::shared_ptr<moses::Place> place_ptr = std::make_shared<moses::Place>(Hyrise::get().places.at("table"));
   auto p = std::filesystem::path(filename);
+  std::shared_ptr<moses::Place> place_ptr;
+  if (Hyrise::get().places.find(p.stem().string()) == Hyrise::get().places.end()) {
+    fprintf(stderr, "missing place: %s\n", p.stem().string().c_str());
+    place_ptr = std::make_shared<moses::Place>(Hyrise::get().places.at("table"));
+  } else {
+    place_ptr = std::make_shared<moses::Place>(Hyrise::get().places.at(p.stem().string()));
+  }
   mos_mem_src = std::make_shared<MosesMemoryResource>(place_ptr, p.stem().string());
+#endif
+#if defined(HYRISE_WITH_MOSES) && defined(TABLE_PLACES)
+  auto p = std::filesystem::path(filename);
+  moses::Place *place;
+  if (Hyrise::get().places.find(p.stem().string()) == Hyrise::get().places.end()) {
+    fprintf(stderr, "missing place: %s\n", p.stem().string().c_str());
+    place = &Hyrise::get().places.at("table");
+  } else {
+    place = &Hyrise::get().places.at(p.stem().string());
+  }
+  moses::PlaceGuard guard(place);
 #endif
   std::ifstream file;
   file.open(filename, std::ios::binary);

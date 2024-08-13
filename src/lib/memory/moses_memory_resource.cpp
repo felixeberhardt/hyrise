@@ -22,13 +22,15 @@ MosesMemoryResource::MosesMemoryResource() {
 
 void MosesMemoryResource::reserve(std::size_t bytes) {
 #ifdef HYRISE_WITH_MOSES
-  _alloc->Reserve(bytes);
+  //_alloc->Reserve(bytes);
 #endif
 }
 
 void* MosesMemoryResource::do_allocate(std::size_t bytes, std::size_t alignment) {
 #ifdef HYRISE_WITH_MOSES
-  void *addr = _alloc->Allocate(bytes);
+  moses::PlaceGuard guard(_place.get());
+  void *addr = malloc(bytes);
+  //void *addr = _alloc->Allocate(bytes);
   return addr;
 #else
   return malloc(bytes);
@@ -37,7 +39,8 @@ void* MosesMemoryResource::do_allocate(std::size_t bytes, std::size_t alignment)
 
 void MosesMemoryResource::do_deallocate(void* pointer, std::size_t bytes, std::size_t alignment) {
 #ifdef HYRISE_WITH_MOSES
-  _alloc->Deallocate(pointer, bytes);
+  //_alloc->Deallocate(pointer, bytes);
+  free(pointer);
 #else
   free(pointer);
 #endif
